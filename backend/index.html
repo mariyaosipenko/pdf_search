@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="X-UA-Compatible" content="ie=edge"/>
+    <title>Ищем PDF в большом и страшном поисковике</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
+          integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+</head>
+<body>
+<nav class="navbar sticky-top bg-primary">
+    <div class="container">
+        <a class="navbar-brand text-white" href="/">Search PDF Demo </a>
+    </div>
+</nav>
+
+<section class="container">
+
+    <form action="/search" method="GET">
+        <div class="form-floating m-5">
+            <input
+                    autofocus
+                    class="form-control"
+                    value="{{ .SearchKey }}"
+                    placeholder="Что искать изволите?"
+                    type="search"
+                    name="q"
+                    id="q"
+            />
+            <label for="q">Поиск по PDF документам </label>
+        </div>
+    </form>
+
+    {{ if .Results }}
+    <div class="m-5 p-3 text-body-secondary bg-light-subtle rounded-3">
+        {{ if (gt .TotalPages 0)}}
+        <p>
+            Нашлось <strong>{{ .TotalResults }}</strong> документов, страница <strong>{{ .CurrentPage }}</strong>
+            из <strong> {{ .TotalPages }}</strong>
+        </p>
+        {{ else if (ne .Query "") and (eq .Results.TotalResults 0) }}
+        <p>
+            Ничего не найдено по запросу: <strong>{{ .Query }}</strong>.
+        </p>
+        {{ end }}
+    </div>
+    {{ end }}
+
+    {{ range.Results.Items }}
+    <div class="card m-5">
+        <div class="row g-0">
+            <div class="col-md-9">
+                <div class="card-body">
+                    <h5 class="card-title">
+                        <a target="_blank" rel="noreferrer noopener" href="{{ .Link }}">
+                            {{ .Title }}
+                        </a>
+                    </h5>
+                    <p class="card-text">{{ .Snippet }}</p>
+                    <p class="card-text"><small class="text-body-secondary">
+                        <a target="_blank" rel="noreferrer noopener"   href="{{ .Link }}">
+                        {{ .Link }}
+                    </a></small></p>
+                </div>
+            </div>
+            <div class="col-md-3">
+                {{ range.Pagemap.CseThumbnail }}
+                <img src="{{ .Src }}" class="float-end rounded-end">
+                {{ end }}
+            </div>
+        </div>
+    </div>
+    {{ end }}
+    <div class="btn-group m-5" role="group">
+        {{ if . }}
+        {{ $SearchKey := .SearchKey}}
+        {{ if ( .Results.Queries.PreviousPage) }}
+        {{ range.Results.Queries.PreviousPage }}
+        <a href="/search?q={{ $SearchKey }}&start={{ .StartIndex }}" class="btn btn-outline-primary">Предыдущая страница</a>
+        {{ end }}
+        {{ end }}
+        {{ if ( .Results.Queries.NextPage) }}
+        {{ range.Results.Queries.NextPage }}
+        <a href="/search?q={{ $SearchKey }}&start={{ .StartIndex }}" class="btn btn-outline-primary">Следующая страница</a>
+        {{ end }}
+        {{ end }}
+        {{ end }}
+    </div>
+</section>
+
+</body>
+</html>
