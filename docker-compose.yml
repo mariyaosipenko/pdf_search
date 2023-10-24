@@ -1,0 +1,9 @@
+version: "3.7"
+
+services:
+  backend:
+    container_name: backend
+    build: ./backend
+    ports:
+      - "3000:3000"
+    command: /server

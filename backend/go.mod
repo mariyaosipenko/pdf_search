@@ -1,3 +1,3 @@
-module pdf_serch
+module pdf_search
 
 go 1.21
