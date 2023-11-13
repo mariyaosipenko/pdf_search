@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/kelseyhightower/envconfig"
 	"html/template"
 	"log"
 	"net/http"
@@ -57,6 +58,10 @@ type Search struct {
 	Start        int
 	Results      Results
 }
+type Cred struct {
+	ApiKey string `envconfig:"api_key"`
+	Cx     string
+}
 
 func (s *Search) CurrentPage() int {
 	return s.Results.Queries.Request[0].StartIndex/10 + 1
@@ -88,14 +93,20 @@ func main() {
 
 func searchHandler(w http.ResponseWriter, r *http.Request) {
 
-	apiKey := "AIzaSyAKWOEyAA8SDVI5cT2hotqQWDFyHMPHWZ4"
-	cx := "060a1f6de10054ab2"
+	var c Cred
+	err := envconfig.Process("goo", &c)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Internal server error"))
+		log.Print(err)
+		return
+	}
 
 	u, err := url.Parse(r.URL.String())
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Internal server error"))
-		log.Fatal(err)
+		log.Print(err)
 		return
 	}
 
@@ -111,8 +122,8 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	endpoint := fmt.Sprintf(
 		"https://www.googleapis.com/customsearch/v1?key=%s&cx=%s&q=query=%s+filetype%%3Apdf&start=%d",
-		apiKey,
-		cx,
+		c.ApiKey,
+		c.Cx,
 		url.QueryEscape(search.SearchKey),
 		search.Start)
 
