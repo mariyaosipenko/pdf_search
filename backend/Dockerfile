@@ -4,6 +4,7 @@ FROM golang:1.19 AS build-env
 ADD . /backend
 WORKDIR /backend
 
+RUN go mod tidy
 RUN go build -o /server
 
 # Final stage
