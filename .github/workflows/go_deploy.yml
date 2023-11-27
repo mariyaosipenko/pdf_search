@@ -38,8 +38,7 @@ jobs:
             port: ${{ secrets.SERVER_PORT }}
             username: ${{ secrets.SERVER_USERNAME }}
             private_key: ${{ secrets.PRIVATE_KEY }}
-            scp_source: README.md
-            scp_target: ${{ secrets.PROJECT_FOLDER }}
+            scp_target: /home/pdf_search
             before_script: | 
               git checkout main;
               git pull;
