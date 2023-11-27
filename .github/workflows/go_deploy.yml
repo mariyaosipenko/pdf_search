@@ -39,7 +39,7 @@ jobs:
             username: ${{ secrets.SERVER_USERNAME }}
             private_key: ${{ secrets.PRIVATE_KEY }}
             scp_target: /home/pdf_search
-            before_script: | 
+            after_script: | 
               git checkout main;
               git pull;
               docker compose down;
