@@ -32,13 +32,13 @@ jobs:
         - name: Checkout code
           uses: actions/checkout@v3
         - name: Run command on remote server
-          uses: kostya-ten/ssh-server-deploy@v4
+          uses: appleboy/ssh-action@v1.0.0
           with:
             host: ${{ secrets.SSH_HOST }}
             username: ${{ secrets.SSH_USER }}
-            private_key: ${{ secrets.PRIVATE_KEY }}
-            scp_target: ${{ secrets.PROJECT_FOLDER }}
-            before_script: | 
+            password: ${{ secrets.SERVER_PASSWORD }}
+            script: |
+              cd ${{ secrets.PROJECT_FOLDER }};
               git checkout main;
               git pull;
               docker compose down;
