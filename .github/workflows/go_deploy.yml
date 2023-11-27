@@ -32,13 +32,15 @@ jobs:
         - name: Checkout code
           uses: actions/checkout@v3
         - name: Run command on remote server
-          uses: D3rHase/ssh-command-action@v0.2.2
+          uses: kostya-ten/ssh-server-deploy@v4
           with:
-            host: ${{secrets.SSH_HOST}}
-            user: ${{secrets.SSH_USER}}
-            private_key: ${{secrets.SSH_PRIVATE_KEY}}
-            command: |
-              cd ${{ secrets.PROJECT_FOLDER }};
+            host: ${{ secrets.SERVER_HOST }}
+            port: ${{ secrets.SERVER_PORT }}
+            username: ${{ secrets.SERVER_USERNAME }}
+            private_key: ${{ secrets.PRIVATE_KEY }}
+            scp_source: README.md
+            scp_target: ${{ secrets.PROJECT_FOLDER }}
+            before_script: | 
               git checkout main;
               git pull;
               docker compose down;
