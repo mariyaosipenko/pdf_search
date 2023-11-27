@@ -34,12 +34,11 @@ jobs:
         - name: Run command on remote server
           uses: kostya-ten/ssh-server-deploy@v4
           with:
-            host: ${{ secrets.SERVER_HOST }}
-            port: ${{ secrets.SERVER_PORT }}
-            username: ${{ secrets.SERVER_USERNAME }}
+            host: ${{ secrets.SSH_HOST }}
+            username: ${{ secrets.SSH_USER }}
             private_key: ${{ secrets.PRIVATE_KEY }}
-            scp_target: /home/pdf_search
-            after_script: | 
+            scp_target: ${{ secrets.PROJECT_FOLDER }}
+            before_script: | 
               git checkout main;
               git pull;
               docker compose down;
