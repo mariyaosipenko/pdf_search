@@ -3,16 +3,21 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/kelseyhightower/envconfig"
 	"html/template"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
+
+	"github.com/kelseyhightower/envconfig"
 )
 
 var tpl = template.Must(template.ParseFiles("index.html"))
+
+const googleURL = "https://www.googleapis.com/customsearch/v1?key=%s&cx=%s&q=query=%s+filetype%%3Apdf&start=%d"
+const defaultPort = "3000"
+const linksOnPage = 10
 
 type Items struct {
 	Title       string `json:"title"`
@@ -34,21 +39,22 @@ type Items struct {
 
 type Results struct {
 	Queries struct {
-		Request []struct {
-			TotalResults string `json:"totalResults"`
-			Count        int    `json:"count"`
-			StartIndex   int    `json:"startIndex"`
-		} `json:"request"`
-		NextPage []struct {
-			Count      int `json:"count"`
-			StartIndex int `json:"startIndex"`
-		} `json:"nextPage"`
-		PreviousPage []struct {
-			Count      int `json:"count"`
-			StartIndex int `json:"startIndex"`
-		} `json:"previousPage"`
+		Request      []Request `json:"request"`
+		NextPage     []Page    `json:"nextPage"`
+		PreviousPage []Page    `json:"previousPage"`
 	} `json:"queries"`
 	Items []Items `json:"items"`
+}
+
+type Page struct {
+	Count      int `json:"count"`
+	StartIndex int `json:"startIndex"`
+}
+
+type Request struct {
+	TotalResults string `json:"totalResults"`
+	Count        int    `json:"count"`
+	StartIndex   int    `json:"startIndex"`
 }
 
 type Search struct {
@@ -64,7 +70,10 @@ type Cred struct {
 }
 
 func (s *Search) CurrentPage() int {
-	return s.Results.Queries.Request[0].StartIndex/10 + 1
+	if s.Results.Queries.Request == nil || len(s.Results.Queries.Request) < 1 {
+		return 1
+	}
+	return s.Results.Queries.Request[0].StartIndex/linksOnPage + 1
 }
 
 func indexHandler(w http.ResponseWriter, r *http.Request) {
@@ -75,15 +84,15 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "3000"
+	port, ok := os.LookupEnv("PORT")
+	if !ok {
+		port = defaultPort
 	}
 
 	mux := http.NewServeMux()
 	fs := http.FileServer(http.Dir("assets"))
 	mux.Handle("/assets/", http.StripPrefix("/assets/", fs))
-	mux.HandleFunc("/search", searchHandler)
+	mux.HandleFunc("/search", SearchHandler)
 	mux.HandleFunc("/", indexHandler)
 	err := http.ListenAndServe(":"+port, mux)
 	if err != nil {
@@ -91,7 +100,7 @@ func main() {
 	}
 }
 
-func searchHandler(w http.ResponseWriter, r *http.Request) {
+func SearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	var c Cred
 	err := envconfig.Process("goo", &c)
@@ -121,7 +130,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	endpoint := fmt.Sprintf(
-		"https://www.googleapis.com/customsearch/v1?key=%s&cx=%s&q=query=%s+filetype%%3Apdf&start=%d",
+		googleURL,
 		c.ApiKey,
 		c.Cx,
 		url.QueryEscape(search.SearchKey),
@@ -137,7 +146,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte("Internal server error"))
 		log.Fatal(err)
@@ -154,7 +163,7 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 
 	search.TotalResults, _ = strconv.Atoi(search.Results.Queries.Request[0].TotalResults)
 
-	search.TotalPages = search.TotalResults/10 + 1
+	search.TotalPages = search.TotalResults/linksOnPage + 1
 	err = tpl.Execute(w, search)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
