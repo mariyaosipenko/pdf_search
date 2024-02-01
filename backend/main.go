@@ -105,18 +105,12 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	var c Cred
 	err := envconfig.Process("goo", &c)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		log.Print(err)
-		return
+		handleError(err, w)
 	}
 
 	u, err := url.Parse(r.URL.String())
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		log.Print(err)
-		return
+		handleError(err, w)
 	}
 
 	search := &Search{}
@@ -138,27 +132,18 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp, err := http.Get(endpoint)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		log.Fatal(err)
-		return
+		handleError(err, w)
 	}
 
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		log.Fatal(err)
-		return
+		handleError(err, w)
 	}
 
 	err = json.NewDecoder(resp.Body).Decode(&search.Results)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		log.Fatal(err)
-		return
+		handleError(err, w)
 	}
 
 	search.TotalResults, _ = strconv.Atoi(search.Results.Queries.Request[0].TotalResults)
@@ -166,9 +151,13 @@ func SearchHandler(w http.ResponseWriter, r *http.Request) {
 	search.TotalPages = search.TotalResults/linksOnPage + 1
 	err = tpl.Execute(w, search)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Internal server error"))
-		log.Fatal(err)
+		handleError(err, w)
 	}
 
+}
+
+func handleError(err error, w http.ResponseWriter) {
+	w.WriteHeader(http.StatusInternalServerError)
+	w.Write([]byte("Internal server error"))
+	log.Fatal(err)
 }
